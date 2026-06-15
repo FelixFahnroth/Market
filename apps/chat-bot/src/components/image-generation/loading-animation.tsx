@@ -17,7 +17,7 @@ export default function LoadingAnimation({
   return (
     <div
       className={cn(
-        'mx-auto w-full max-w-md aspect-square max-h-[60vh] flex flex-col items-center justify-center bg-gray-50 rounded-enterprise-md mb-4',
+        'mx-auto w-full max-w-md flex flex-col items-center justify-center bg-gray-50 rounded-enterprise-md my-4',
         className,
       )}
     >
