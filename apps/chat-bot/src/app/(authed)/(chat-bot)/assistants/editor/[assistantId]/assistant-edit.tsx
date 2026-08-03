@@ -55,7 +55,7 @@ import { CustomChatPromptSuggestions } from '@/components/custom-chat/custom-cha
 import { CustomChatInstructionsExampleDialog } from '@/components/custom-chat/custom-chat-instructions-example-dialog';
 import { RichText, stripRichTextTags } from '@/components/common/rich-text';
 import { CustomChatHeaderContent } from '@/components/custom-chat/custom-chat-header-content';
-import { CustomChatWebSearch } from '@/components/custom-chat/custom-chat-web-search';
+import { CustomChatWebSearch } from '@/components/custom-chat/web-search/custom-chat-web-search';
 import { CustomChatSuspensionError } from '@/components/custom-chat/custom-chat-suspension-error';
 import {
   getAccessLevelFromShareForm,
@@ -198,14 +198,7 @@ export function AssistantEdit({
           name: data.name.trim(),
           description: data.description,
           instructions: data.instructions,
-          filterGroup: toFilterGroup({
-            schoolTypes: data.schoolTypes,
-            gradeRanges: data.gradeRanges,
-            subjects: data.subjects,
-            categories: data.categories,
-            federalStates: data.federalStates,
-            languages: data.languages,
-          }),
+          filterGroup: toFilterGroup(data),
           hasLinkAccess: data.hasLinkAccess,
           isWebSearchEnabled: data.isWebSearchEnabled,
           promptSuggestions: data.promptSuggestions
@@ -458,7 +451,6 @@ export function AssistantEdit({
 
           {isWebSearchAvailable && (
             <CustomChatWebSearch
-              name="isWebSearchEnabled"
               control={control}
               onCheckedChange={() => {
                 void flushAutoSave();
