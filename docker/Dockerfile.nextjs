@@ -6,10 +6,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY . .
 RUN pnpm install --frozen-lockfile --no-engine
 
-ARG APP_NAME=chat-bot
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN pnpm --filter ${APP_NAME} build
+# Gesamten Workspace bauen
+RUN pnpm build
 
 FROM node:24-alpine AS runner
 WORKDIR /app
@@ -21,7 +21,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 ARG APP_NAME=chat-bot
-ENV APP_NAME_ENV=${APP_NAME}
+ENV APP_DIR=${APP_NAME}
 
 COPY --from=builder /app ./
 
@@ -31,4 +31,4 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD pnpm --filter ${APP_NAME_ENV} start
+CMD ["sh", "-c", "pnpm --filter @ais-chat/${APP_DIR} start || pnpm --filter ${APP_DIR} start"]
