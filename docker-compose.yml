@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ais-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ais_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ais_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ais_chat}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ais_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: ais-valkey
+    restart: always
+    volumes:
+      - valkey_data:/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: ais-keycloak
+    restart: always
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_secret}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ais_chat}
+      KC_DB_USERNAME: ${POSTGRES_USER:-ais_user}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-ais_secret_password}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ais-chat-api:
+    image: ghcr.io/fwu-de/ais-chat/ais-chat-api:latest
+    container_name: ais-chat-api
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ais_user}:${POSTGRES_PASSWORD:-ais_secret_password}@postgres:5432/${POSTGRES_DB:-ais_chat}
+      VALKEY_HOST: valkey
+      VALKEY_PORT: 6379
+      KEYCLOAK_URL: http://keycloak:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+
+  chat-bot:
+    image: ghcr.io/fwu-de/ais-chat/chat-bot:latest
+    container_name: ais-chat-bot
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: https://${CHAT_DOMAIN}/api
+      KEYCLOAK_ISSUER: https://${AUTH_DOMAIN}/realms/master
+    depends_on:
+      - ais-chat-api
+
+  admin:
+    image: ghcr.io/fwu-de/ais-chat/admin:latest
+    container_name: ais-admin
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: https://${ADMIN_DOMAIN}/api
+    depends_on:
+      - ais-chat-api
+
+volumes:
+  postgres_data:
+  valkey_data:
