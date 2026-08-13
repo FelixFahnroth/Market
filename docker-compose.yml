@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -41,7 +39,9 @@ services:
         condition: service_healthy
 
   ais-chat-api:
-    image: ghcr.io/fwu-de/ais-chat/ais-chat-api:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
     container_name: ais-chat-api
     restart: always
     environment:
@@ -56,7 +56,11 @@ services:
         condition: service_started
 
   chat-bot:
-    image: ghcr.io/fwu-de/ais-chat/chat-bot:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nextjs
+      args:
+        APP_NAME: chat-bot
     container_name: ais-chat-bot
     restart: always
     environment:
@@ -66,7 +70,11 @@ services:
       - ais-chat-api
 
   admin:
-    image: ghcr.io/fwu-de/ais-chat/admin:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nextjs
+      args:
+        APP_NAME: admin
     container_name: ais-admin
     restart: always
     environment:
