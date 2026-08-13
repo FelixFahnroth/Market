@@ -1,0 +1,51 @@
+# Build Stage
+FROM node:20-alpine AS builder
+RUN apk add --no-libc-dev libc6-compat
+WORKDIR /app
+
+# PNPM installieren
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Paket-Dateien kopieren
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/chat-bot/package.json ./apps/chat-bot/
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/ ./packages/
+
+# Abhängigkeiten installieren
+RUN pnpm install --frozen-lockfile
+
+# Quellcode kopieren
+COPY . .
+
+# Argument zur Steuerung der App (chat-bot oder admin)
+ARG APP_NAME=chat-bot
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Anwendung bauen
+RUN pnpm --filter ${APP_NAME} build
+
+# Runner Stage
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+ARG APP_NAME=chat-bot
+
+# Standalone Output kopieren (Next.js output: 'standalone')
+COPY --from=builder /app/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
+
+USER nextjs
+
+EXPOSE 3000
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "apps/chat-bot/server.js"]
