@@ -111,8 +111,6 @@ services:
     restart: unless-stopped
     environment:
       XBERG_MAX_UPLOAD_SIZE_MB: '50'
-    ports:
-      - '8000:8000'
     volumes:
       - xberg_cache:/app/.xberg
     healthcheck:
