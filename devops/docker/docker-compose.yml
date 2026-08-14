@@ -25,10 +25,10 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
       - "traefik.http.routers.market-auth.rule=Host(`market-vvy6mg-3c9729-49-12-232-194.sslip.io`)"
       - "traefik.http.routers.market-auth.entrypoints=web,websecure"
       - "traefik.http.routers.market-auth.tls=true"
-      - "traefik.http.routers.market-auth.tls.certresolver=letsencrypt"
       - "traefik.http.services.market-auth.loadbalancer.server.port=8080"
 
   # PostgreSQL database with pgvector extension
@@ -185,10 +185,10 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
       - "traefik.http.routers.market-chat.rule=Host(`market-vvy6mg-2ca57a-49-12-232-194.sslip.io`)"
       - "traefik.http.routers.market-chat.entrypoints=web,websecure"
       - "traefik.http.routers.market-chat.tls=true"
-      - "traefik.http.routers.market-chat.tls.certresolver=letsencrypt"
       - "traefik.http.services.market-chat.loadbalancer.server.port=3000"
     depends_on:
       postgres:
@@ -235,10 +235,10 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
       - "traefik.http.routers.market-admin.rule=Host(`market-vvy6mg-a7fe0d-49-12-232-194.sslip.io`)"
       - "traefik.http.routers.market-admin.entrypoints=web,websecure"
       - "traefik.http.routers.market-admin.tls=true"
-      - "traefik.http.routers.market-admin.tls.certresolver=letsencrypt"
       - "traefik.http.services.market-admin.loadbalancer.server.port=3001"
     depends_on:
       postgres:
