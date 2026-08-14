@@ -266,6 +266,10 @@ services:
         echo '=== Starting AIS.chat Initialization ==='
         apk add --no-cache s3cmd postgresql-client
         s3cmd --access_key=rustfsadmin --secret_key=rustfsadmin123 --host=rustfs:9000 --host-bucket='rustfs:9000/%(bucket)' --region=us-east-1 --no-ssl --no-check-certificate mb s3://ais-chat || true
+        echo 'Warte auf das Anlegen der Tabellen durch die API...'
+        until PGPASSWORD=test1234 psql -h postgres -U admin -d api_db -c 'SELECT 1 FROM organization' > /dev/null 2>&1; do
+          sleep 5
+        done
         PGPASSWORD=test1234 psql -h postgres -U admin -d api_db -c \"INSERT INTO organization (name) SELECT 'LOCAL' WHERE NOT EXISTS (SELECT 1 FROM organization);\" || true
         echo '=== AIS.chat initialization completed successfully ==='
       "
