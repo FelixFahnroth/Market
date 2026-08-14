@@ -10,6 +10,10 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       CLIENT_NAME: ais-chat-dev-client
       CLIENT_SECRET: ClientSecret
+      KC_HOSTNAME: https://market-vvy6mg-3c9729-49-12-232-194.sslip.io
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
     entrypoint: /opt/keycloak/data/import/entrypoint.sh
     volumes:
       - keycloak_data:/opt/keycloak/data/h2
@@ -152,7 +156,7 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: 3000
       API_KEY: ais-chat-app_api-key
-      NODE_ENV: development
+      NODE_ENV: production
 
       # Authentication
       AUTH_SECRET: ais-chat-default-secret-please-change-in-production-use-openssl-rand-base64-32
@@ -160,8 +164,8 @@ services:
       # Keycloak
       VIDIS_CLIENT_ID: ais-chat-dev-client
       VIDIS_CLIENT_SECRET: ClientSecret
-      VIDIS_BASE_URI: http://localhost:8180/realms/ais-chat-local
-      VIDIS_ISSUER_URI: http://keycloak:8080/realms/ais-chat-local
+      VIDIS_BASE_URI: https://market-vvy6mg-3c9729-49-12-232-194.sslip.io/realms/ais-chat-local
+      VIDIS_ISSUER_URI: https://market-vvy6mg-3c9729-49-12-232-194.sslip.io/realms/ais-chat-local
 
       # Databases
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
@@ -237,7 +241,7 @@ services:
       # Keycloak
       KEYCLOAK_CLIENT_ID: ais-chat-dev-client
       KEYCLOAK_CLIENT_SECRET: ClientSecret
-      KEYCLOAK_ISSUER: http://localhost:8180/realms/ais-chat-local
+      KEYCLOAK_ISSUER: https://market-vvy6mg-3c9729-49-12-232-194.sslip.io/realms/ais-chat-local
 
       # AIS.chat app
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
