@@ -20,6 +20,9 @@ services:
       - ./keycloak:/opt/keycloak/data/import
     ports:
       - '8180:8080'
+    networks:
+      - default
+      - dokploy-network
 
   # PostgreSQL database with pgvector extension
   postgres:
@@ -115,26 +118,17 @@ services:
     ports:
       - '3102:3002'
     environment:
-      # Database
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/api_db
-
-      # API Configuration
       API_NAME: ais-chat
       API_KEY: ais-chat-api_api-key
       PORT: 3002
-
-      # Logging
       LOG_LEVEL: info
-
-      # LLM Provider Credentials
       LLM_IONOS_API_KEY: API_KEY_PLACEHOLDER
       LLM_IONOS_BASE_URL: PLACEHOLDER_BASE_URL
       LLM_GPT4OMINI_API_KEY: API_KEY_PLACEHOLDER
       LLM_GPT4OMINI_BASE_URL: PLACEHOLDER_BASE_URL
       LLM_GPT5NANO_API_KEY: API_KEY_PLACEHOLDER
       LLM_GPT5NANO_BASE_URL: PLACEHOLDER_BASE_URL
-
-      # Bifrost LLM proxy
       BIFROST_BASE_URL: http://bifrost:8080/openai/v1
       BIFROST_API_KEY: sk-bf-example-key
     depends_on:
@@ -152,60 +146,36 @@ services:
     ports:
       - '3100:3000'
     environment:
-      # Application
       HOSTNAME: 0.0.0.0
       PORT: 3000
       API_KEY: ais-chat-app_api-key
       NODE_ENV: production
-
-      # Authentication
       AUTH_SECRET: ais-chat-default-secret-please-change-in-production-use-openssl-rand-base64-32
-
-      # Keycloak
       VIDIS_CLIENT_ID: ais-chat-dev-client
       VIDIS_CLIENT_SECRET: ClientSecret
       VIDIS_BASE_URI: https://market-vvy6mg-3c9729-49-12-232-194.sslip.io/realms/ais-chat-local
       VIDIS_ISSUER_URI: https://market-vvy6mg-3c9729-49-12-232-194.sslip.io/realms/ais-chat-local
-
-      # Databases
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
       API_DATABASE_URL: postgresql://admin:test1234@postgres:5432/api_db
       DB_CACHE_TTL_SECONDS: 300
-
-      # Valkey (Redis) for sessions
       VALKEY_URL: redis://valkey:6379/0
-
-      # RabbitMQ for reporting
       RABBITMQ_URI: amqp://user:password@rabbitmq:5672
-
-      # AIS.chat API connection
       API_URL: http://ais-chat-api:3002
-
-      # Crawl4AI
       CRAWL4AI_URL: http://crawl4ai:11235
       CRAWL4AI_API_TOKEN: ais-chat-crawl4ai-token
-
-      # Xberg text extraction
       XBERG_URL: http://xberg:8000
-
-      # Bifrost LLM proxy
       BIFROST_BASE_URL: http://bifrost:8080/openai/v1
       BIFROST_API_KEY: sk-bf-example-key
-
-      # S3 Object Storage
       OTC_SECRET_ACCESS_KEY: rustfsadmin123
       OTC_ACCESS_KEY_ID: rustfsadmin
       OTC_S3_HOSTNAME: http://rustfs:9000
       OTC_BUCKET_NAME: ais-chat
-
-      # Encryption key
       ENCRYPTION_KEY: default-encryption-key-change-in-production
-
-      # Google Vertex AI
       GOOGLE_APPLICATION_CREDENTIALS: ''
-
-      # Logging
       NEXT_PUBLIC_SENTRY_LOG_LEVEL: debug
+    networks:
+      - default
+      - dokploy-network
     depends_on:
       postgres:
         condition: service_started
@@ -231,34 +201,24 @@ services:
     ports:
       - '3101:3001'
     environment:
-      # Application
       HOSTNAME: 0.0.0.0
       PORT: 3001
-
-      # Authentication
       AUTH_SECRET: ais-chat-default-secret-please-change-in-production-use-openssl-rand-base64-32
-
-      # Keycloak
       KEYCLOAK_CLIENT_ID: ais-chat-dev-client
       KEYCLOAK_CLIENT_SECRET: ClientSecret
       KEYCLOAK_ISSUER: https://market-vvy6mg-3c9729-49-12-232-194.sslip.io/realms/ais-chat-local
-
-      # AIS.chat app
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
       ENCRYPTION_KEY: default-encryption-key-change-in-production
-
-      # AIS.chat api
       API_DATABASE_URL: postgresql://admin:test1234@postgres:5432/api_db
       API_KEY: ais-chat-api_api-key
       API_URL: http://ais-chat-api:3002
-
-      # Bifrost LLM proxy
       BIFROST_ADMIN_URL: http://bifrost:8080
       BIFROST_ADMIN_USERNAME: admin
       BIFROST_ADMIN_PASSWORD: admin
-
-      # Monitoring
       NEXT_PUBLIC_SENTRY_LOG_LEVEL: info
+    networks:
+      - default
+      - dokploy-network
     depends_on:
       postgres:
         condition: service_started
@@ -283,17 +243,9 @@ services:
     command: >
       sh -c "
         echo '=== Starting AIS.chat Initialization ==='
-
-        echo '=== Installing s3cmd ==='
-        apk add --no-cache s3cmd
-
-        echo '=== Creating S3 bucket: ais-chat ==='
-        s3cmd --access_key=rustfsadmin --secret_key=rustfsadmin123 --host=rustfs:9000 --host-bucket='rustfs:9000/%(bucket)' --region=us-east-1 --no-ssl --no-check-certificate mb s3://ais-chat
-
-        echo '=== Seeding api_db ==='
-        apk add --no-cache postgresql-client
-        PGPASSWORD=test1234 psql -h postgres -U admin -d api_db -c \"INSERT INTO organization (name) SELECT 'LOCAL' WHERE NOT EXISTS (SELECT 1 FROM organization);\"
-
+        apk add --no-cache s3cmd postgresql-client
+        s3cmd --access_key=rustfsadmin --secret_key=rustfsadmin123 --host=rustfs:9000 --host-bucket='rustfs:9000/%(bucket)' --region=us-east-1 --no-ssl --no-check-certificate mb s3://ais-chat || true
+        PGPASSWORD=test1234 psql -h postgres -U admin -d api_db -c \"INSERT INTO organization (name) SELECT 'LOCAL' WHERE NOT EXISTS (SELECT 1 FROM organization);\" || true
         echo '=== AIS.chat initialization completed successfully ==='
       "
     depends_on:
@@ -307,6 +259,10 @@ services:
         condition: service_started
       ais-chat-app:
         condition: service_started
+
+networks:
+  dokploy-network:
+    external: true
 
 volumes:
   postgres_data:
