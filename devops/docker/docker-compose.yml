@@ -34,12 +34,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U admin -d app_db']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
   # Valkey (Redis-compatible) for session storage
   valkey:
@@ -49,11 +43,6 @@ services:
       - valkey_data:/data
     ports:
       - '6379:6379'
-    healthcheck:
-      test: ['CMD', 'valkey-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # RabbitMQ for async messaging and reporting
   rabbitmq:
@@ -65,11 +54,6 @@ services:
     ports:
       - '5672:5672'
       - '15672:15672'
-    healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # Crawl4AI for web scraping capabilities
   crawl4ai:
@@ -87,12 +71,6 @@ services:
         reservations:
           memory: '1gb'
     shm_size: '2gb'
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:11235/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # Xberg text extraction service
   xberg:
@@ -102,11 +80,6 @@ services:
       XBERG_MAX_UPLOAD_SIZE_MB: '50'
     volumes:
       - xberg_cache:/app/.xberg
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8000/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # RustFS - S3-compatible object storage
   rustfs:
@@ -123,12 +96,6 @@ services:
       - rustfs_data:/data
     ports:
       - '9001:9001'
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:9000/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   bifrost:
     image: ghcr.io/maximhq/bifrost:v1.6.8
@@ -173,7 +140,7 @@ services:
     network_mode: service:keycloak
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       keycloak:
         condition: service_started
       bifrost:
@@ -243,17 +210,17 @@ services:
     network_mode: service:keycloak
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       valkey:
-        condition: service_healthy
+        condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
       crawl4ai:
-        condition: service_healthy
+        condition: service_started
       xberg:
-        condition: service_healthy
+        condition: service_started
       rustfs:
-        condition: service_healthy
+        condition: service_started
       keycloak:
         condition: service_started
       bifrost:
@@ -297,7 +264,7 @@ services:
     network_mode: service:keycloak
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       keycloak:
         condition: service_started
       bifrost:
@@ -339,15 +306,15 @@ services:
     network_mode: service:keycloak
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
       rustfs:
-        condition: service_healthy
+        condition: service_started
       keycloak:
         condition: service_started
       ais-chat-api:
-        condition: service_healthy
+        condition: service_started
       ais-chat-app:
-        condition: service_healthy
+        condition: service_started
 
 volumes:
   postgres_data:
