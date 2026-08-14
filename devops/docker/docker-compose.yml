@@ -4,6 +4,7 @@ services:
   # Keycloak for authentication
   keycloak:
     image: quay.io/keycloak/keycloak:26.7.1
+    platform: linux/arm64
     restart: unless-stopped
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
@@ -34,6 +35,7 @@ services:
   # PostgreSQL database with pgvector extension
   postgres:
     image: pgvector/pgvector:pg16
+    platform: linux/arm64
     restart: unless-stopped
     environment:
       POSTGRES_DB: app_db
@@ -46,6 +48,7 @@ services:
   # Valkey (Redis-compatible) for session storage
   valkey:
     image: ghcr.io/valkey-io/valkey:9.1.1-alpine
+    platform: linux/arm64
     restart: unless-stopped
     volumes:
       - valkey_data:/data
@@ -55,6 +58,7 @@ services:
   # RabbitMQ for async messaging and reporting
   rabbitmq:
     image: rabbitmq:4-management
+    platform: linux/arm64
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: user
@@ -66,7 +70,7 @@ services:
   # Crawl4AI for web scraping capabilities
   crawl4ai:
     image: unclecode/crawl4ai:0.9.2
-    platform: linux/amd64
+    platform: linux/arm64
     environment:
       CRAWL4AI_API_TOKEN: ais-chat-crawl4ai-token
     restart: unless-stopped
@@ -83,15 +87,17 @@ services:
   # Xberg text extraction service
   xberg:
     image: ghcr.io/xberg-io/xberg:1.0.14-core
+    platform: linux/arm64
     restart: unless-stopped
     environment:
       XBERG_MAX_UPLOAD_SIZE_MB: '50'
     volumes:
       - xberg_cache:/app/.xberg
 
-  # RustFS - S3-compatible object storage
+  # RustFS
   rustfs:
     image: rustfs/rustfs:latest
+    platform: linux/arm64
     restart: unless-stopped
     environment:
       RUSTFS_ADDRESS: 0.0.0.0:9000
@@ -107,6 +113,7 @@ services:
 
   bifrost:
     image: ghcr.io/maximhq/bifrost:v1.6.8
+    platform: linux/arm64
     restart: unless-stopped
     environment:
       BIFROST_ADMIN_USERNAME: admin
@@ -118,9 +125,10 @@ services:
     ports:
       - '8089:8080'
 
-  # AIS.chat API - OpenAI compatible API service
+  # AIS.chat API
   ais-chat-api:
     image: ghcr.io/fwu-de/ais-chat-api:latest
+    platform: linux/arm64
     restart: unless-stopped
     ports:
       - '3102:3002'
@@ -146,9 +154,10 @@ services:
       bifrost:
         condition: service_started
 
-  # AIS.chat App - Main user-facing application
+  # AIS.chat App
   ais-chat-app:
     image: ghcr.io/fwu-de/ais-chat-app:latest
+    platform: linux/arm64
     restart: unless-stopped
     ports:
       - '3100:3000'
@@ -208,9 +217,10 @@ services:
       bifrost:
         condition: service_started
 
-  # AIS.chat Admin - Administration interface
+  # AIS.chat Admin
   ais-chat-admin:
     image: ghcr.io/fwu-de/ais-chat-admin:latest
+    platform: linux/arm64
     restart: unless-stopped
     ports:
       - '3101:3001'
@@ -250,7 +260,8 @@ services:
 
   # Initialization container
   ais-chat-init:
-    image: alpine:3.24.1
+    image: alpine:latest
+    platform: linux/arm64
     restart: no
     environment:
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
