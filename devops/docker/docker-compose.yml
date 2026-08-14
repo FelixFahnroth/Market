@@ -1,9 +1,7 @@
 name: ais-chat-local
 
 services:
-  # Keycloak for authentication (PRIMARY NETWORK HOST)
-  # Containers share this network namespace via network_mode: "service:keycloak"
-  # This is required to access keycloak using the same URL from within the container and the browser
+  # Keycloak for authentication
   keycloak:
     image: quay.io/keycloak/keycloak:26.7.1
     restart: unless-stopped
@@ -17,13 +15,9 @@ services:
       - keycloak_data:/opt/keycloak/data/h2
       - ./keycloak:/opt/keycloak/data/import
     ports:
-      - '3100:3000' # ais-chat-app
-      - '3101:3001' # ais-chat-admin
-      - '3102:3002' # ais-chat-api
-      - '8180:8080' # keycloak
+      - '8180:8080'
 
   # PostgreSQL database with pgvector extension
-  # Creates both app_db (default) and api_db
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
@@ -114,6 +108,8 @@ services:
   ais-chat-api:
     image: ghcr.io/fwu-de/ais-chat-api:latest
     restart: unless-stopped
+    ports:
+      - '3102:3002'
     environment:
       # Database
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/api_db
@@ -126,7 +122,7 @@ services:
       # Logging
       LOG_LEVEL: info
 
-      # LLM Provider Credentials (placeholders - configure via admin UI after setup)
+      # LLM Provider Credentials
       LLM_IONOS_API_KEY: API_KEY_PLACEHOLDER
       LLM_IONOS_BASE_URL: PLACEHOLDER_BASE_URL
       LLM_GPT4OMINI_API_KEY: API_KEY_PLACEHOLDER
@@ -137,7 +133,6 @@ services:
       # Bifrost LLM proxy
       BIFROST_BASE_URL: http://bifrost:8080/openai/v1
       BIFROST_API_KEY: sk-bf-example-key
-    network_mode: service:keycloak
     depends_on:
       postgres:
         condition: service_started
@@ -150,6 +145,8 @@ services:
   ais-chat-app:
     image: ghcr.io/fwu-de/ais-chat-app:latest
     restart: unless-stopped
+    ports:
+      - '3100:3000'
     environment:
       # Application
       HOSTNAME: 0.0.0.0
@@ -158,14 +155,13 @@ services:
       NODE_ENV: development
 
       # Authentication
-      # IMPORTANT: Change AUTH_SECRET in production! Generate with: openssl rand -base64 32
       AUTH_SECRET: ais-chat-default-secret-please-change-in-production-use-openssl-rand-base64-32
 
       # Keycloak
       VIDIS_CLIENT_ID: ais-chat-dev-client
       VIDIS_CLIENT_SECRET: ClientSecret
-      VIDIS_BASE_URI: http://localhost:8080/realms/ais-chat-local
-      VIDIS_ISSUER_URI: http://localhost:8080/realms/ais-chat-local
+      VIDIS_BASE_URI: http://localhost:8180/realms/ais-chat-local
+      VIDIS_ISSUER_URI: http://keycloak:8080/realms/ais-chat-local
 
       # Databases
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
@@ -179,7 +175,7 @@ services:
       RABBITMQ_URI: amqp://user:password@rabbitmq:5672
 
       # AIS.chat API connection
-      API_URL: http://localhost:3002
+      API_URL: http://ais-chat-api:3002
 
       # Crawl4AI
       CRAWL4AI_URL: http://crawl4ai:11235
@@ -192,22 +188,20 @@ services:
       BIFROST_BASE_URL: http://bifrost:8080/openai/v1
       BIFROST_API_KEY: sk-bf-example-key
 
-      # S3 Object Storage for file uploads and image generation
-      # Note: must be changed to a publicly accessible S3 storage, when LLM should have file access (e.g., uploading pictures and asking about content)
+      # S3 Object Storage
       OTC_SECRET_ACCESS_KEY: rustfsadmin123
       OTC_ACCESS_KEY_ID: rustfsadmin
       OTC_S3_HOSTNAME: http://rustfs:9000
       OTC_BUCKET_NAME: ais-chat
 
-      # Encryption key for sensitive data (IMPORTANT: Change in production!)
+      # Encryption key
       ENCRYPTION_KEY: default-encryption-key-change-in-production
 
-      # Google Vertex AI (optional - for image generation)
+      # Google Vertex AI
       GOOGLE_APPLICATION_CREDENTIALS: ''
 
       # Logging
       NEXT_PUBLIC_SENTRY_LOG_LEVEL: debug
-    network_mode: service:keycloak
     depends_on:
       postgres:
         condition: service_started
@@ -230,19 +224,20 @@ services:
   ais-chat-admin:
     image: ghcr.io/fwu-de/ais-chat-admin:latest
     restart: unless-stopped
+    ports:
+      - '3101:3001'
     environment:
       # Application
       HOSTNAME: 0.0.0.0
       PORT: 3001
 
       # Authentication
-      # IMPORTANT: Change AUTH_SECRET in production! Generate with: openssl rand -base64 32
       AUTH_SECRET: ais-chat-default-secret-please-change-in-production-use-openssl-rand-base64-32
 
       # Keycloak
       KEYCLOAK_CLIENT_ID: ais-chat-dev-client
       KEYCLOAK_CLIENT_SECRET: ClientSecret
-      KEYCLOAK_ISSUER: http://localhost:8080/realms/ais-chat-local
+      KEYCLOAK_ISSUER: http://localhost:8180/realms/ais-chat-local
 
       # AIS.chat app
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
@@ -251,17 +246,15 @@ services:
       # AIS.chat api
       API_DATABASE_URL: postgresql://admin:test1234@postgres:5432/api_db
       API_KEY: ais-chat-api_api-key
-      API_URL: http://localhost:3002
-      # Note: DB_CACHE_TTL_SECONDS should NOT be set in admin app
+      API_URL: http://ais-chat-api:3002
 
       # Bifrost LLM proxy
       BIFROST_ADMIN_URL: http://bifrost:8080
       BIFROST_ADMIN_USERNAME: admin
       BIFROST_ADMIN_PASSWORD: admin
 
-      # Monitoring (optional, leave empty to disable)
+      # Monitoring
       NEXT_PUBLIC_SENTRY_LOG_LEVEL: info
-    network_mode: service:keycloak
     depends_on:
       postgres:
         condition: service_started
@@ -275,11 +268,8 @@ services:
     image: alpine:3.24.1
     restart: no
     environment:
-      # Database URLs for both databases
       DATABASE_URL: postgresql://admin:test1234@postgres:5432/app_db
       API_DATABASE_URL: postgresql://admin:test1234@postgres:5432/api_db
-
-      # LLM Provider Credentials (placeholders for seeding)
       LLM_IONOS_API_KEY: API_KEY_PLACEHOLDER
       LLM_IONOS_BASE_URL: PLACEHOLDER_BASE_URL
       LLM_GPT4OMINI_API_KEY: API_KEY_PLACEHOLDER
@@ -299,11 +289,9 @@ services:
         echo '=== Seeding api_db ==='
         apk add --no-cache postgresql-client
         PGPASSWORD=test1234 psql -h postgres -U admin -d api_db -c \"INSERT INTO organization (name) SELECT 'LOCAL' WHERE NOT EXISTS (SELECT 1 FROM organization);\"
-        # Remaining seeding is done manually via ais-chat-admin interface
 
         echo '=== AIS.chat initialization completed successfully ==='
       "
-    network_mode: service:keycloak
     depends_on:
       postgres:
         condition: service_started
