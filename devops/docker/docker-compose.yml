@@ -21,17 +21,6 @@ services:
       - '3001:3001' # ais-chat-admin
       - '3002:3002' # ais-chat-api
       - '8080:8080' # keycloak
-    depends_on:
-      fix-keycloak-volume-ownership:
-        condition: service_completed_successfully
-
-  # Fix keycloak volume permissions (runs with uid 1000)
-  fix-keycloak-volume-ownership:
-    image: alpine
-    restart: no
-    entrypoint: /bin/sh -c "chown 1000 /keycloak"
-    volumes:
-      - keycloak_data:/keycloak
 
   # PostgreSQL database with pgvector extension
   # Creates both app_db (default) and api_db
